@@ -7173,7 +7173,6 @@ public class ESPlorer extends javax.swing.JFrame {
     }
 
     boolean SaveFile() {
-        boolean success = false;
         if (isFileNew()) { // we saving new file
             log("Saving new file...");
             FileCount++;
@@ -7194,9 +7193,10 @@ public class ESPlorer extends javax.swing.JFrame {
             }
             SavePath();
             iFile.set(iTab, chooser.getSelectedFile());
+            String FileName = iFile.get(iTab).getName();
             if (iFile.get(iTab).exists()) {
-                log("File " + iFile.get(iTab).getName() + " already exist, waiting user choice");
-                int shouldWrite = Dialog("File " + iFile.get(iTab).getName() + " already exist. Overwrite?", JOptionPane.YES_NO_OPTION);
+                log("File " + FileName + " already exist, waiting user choice");
+                int shouldWrite = Dialog("File " + FileName + " already exist. Overwrite?", JOptionPane.YES_NO_OPTION);
                 if (shouldWrite != JOptionPane.YES_OPTION) {
                     UpdateEditorButtons();
                     log("Saving canceled by user, because file " + FileName + " already exist");
@@ -7208,16 +7208,21 @@ public class ESPlorer extends javax.swing.JFrame {
         } else { // we saving file, when open
             log("We save known file " + iFile.get(iTab).getName());
         }
-        try {
-            log("Try to saving file " + iFile.get(iTab).getName() + " ...");
-            fos = new FileOutputStream(iFile.get(iTab));
-            osw = new OutputStreamWriter(fos, "UTF-8");
-            bw = new BufferedWriter(osw);
+        return SaveCurrentTabFile();
+    }
+
+    private boolean SaveCurrentTabFile() {
+        boolean success = false;
+        log("Try to saving file " + iFile.get(iTab).getName() + " ...");
+        try (FileOutputStream fos = new FileOutputStream(iFile.get(iTab));
+             OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
+             BufferedWriter bw  = new BufferedWriter(osw);
+        ){
             bw.write(TextEditor1.get(iTab).getText());
             bw.flush();
             osw.flush();
             fos.flush();
-            FileName = iFile.get(iTab).getName();
+            String FileName = iFile.get(iTab).getName();
             log("Save file " + FileName + ": Success.");
             FilesTabbedPane.setTitleAt(iTab, FileName);
             UpdateEditorButtons();
@@ -7228,25 +7233,12 @@ public class ESPlorer extends javax.swing.JFrame {
 //            log(ex.getStackTrace().toString());
             JOptionPane.showMessageDialog(null, "Error, file not saved!");
         }
-        try {
-            if (bw != null) {
-                bw.close();
-            }
-            if (osw != null) {
-                osw.close();
-            }
-            if (fos != null) {
-                fos.close();
-            }
-        } catch (IOException ex) {
-            log(ex.toString());
-//            log(ex.getStackTrace().toString());
-        }
         TextEditor1.get(iTab).discardAllEdits();
         FileChanged.set(iTab, false);
         UpdateEditorButtons();
         return success;
     }
+
     private void MenuItemFileNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemFileNewActionPerformed
         FileNew("");
     }//GEN-LAST:event_MenuItemFileNewActionPerformed
@@ -7305,7 +7297,7 @@ public class ESPlorer extends javax.swing.JFrame {
             if (isOpen >= 0) {
                 FilesTabbedPane.setSelectedIndex(iTab);
                 UpdateEditorButtons();
-                FileName = chooser.getSelectedFile().getName();
+                String FileName = chooser.getSelectedFile().getName();
                 log("File " + FileName + " already open, select tab to file " + FileName);
                 JOptionPane.showMessageDialog(null, "File " + FileName + " already open. You can use 'Reload' only.");
                 return;
@@ -7314,6 +7306,7 @@ public class ESPlorer extends javax.swing.JFrame {
                 AddTab("");
             }
             log("Try to open file " + chooser.getSelectedFile().getName());
+            String FileName;
             try {
                 iFile.set(iTab, chooser.getSelectedFile());
                 FileName = iFile.get(iTab).getName();
@@ -7329,6 +7322,7 @@ public class ESPlorer extends javax.swing.JFrame {
                 JOptionPane.showMessageDialog(null, "Error, file is not open!");
                 log(ex.toString());
                 log("Open: FAIL.");
+                return;
 //                log(ex.getStackTrace().toString());
             }
             if (LoadFile()) {
@@ -7345,7 +7339,7 @@ public class ESPlorer extends javax.swing.JFrame {
             log("Internal error 101: FileTab is NewFile.");
             return false;
         }
-        FileName = "";
+        String FileName = "";
         try {
             FileName = iFile.get(iTab).getName();
             log("Try to load file " + FileName);
@@ -8650,7 +8644,29 @@ public class ESPlorer extends javax.swing.JFrame {
     }//GEN-LAST:event_MenuItemViewRightExtraActionPerformed
 
     private void MenuItemFileSaveAsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemFileSaveAsActionPerformed
-        // TODO add your handling code here:
+        chooser.rescanCurrentDirectory();
+        chooser.setSelectedFile(iFile.get(iTab));
+        int returnVal = chooser.showSaveDialog(null);
+        if (returnVal != JFileChooser.APPROVE_OPTION) {
+            log("Saving abort by user.");
+            UpdateEditorButtons();
+            return;
+        }
+        SavePath();
+        String FileName = chooser.getSelectedFile().getName();
+        if (chooser.getSelectedFile().exists()) {
+            log("File " + FileName + " already exist, waiting user choice");
+            int shouldWrite = Dialog("File " + FileName + " already exists. Overwrite?", JOptionPane.YES_NO_OPTION);
+            if (shouldWrite != JOptionPane.YES_OPTION) {
+                UpdateEditorButtons();
+                log("Saving canceled by user, because file " + FileName + " already exist");
+                return;
+            } else {
+                log("File " + FileName + " will be overwritten by user choice");
+            }
+        }
+        iFile.set(iTab, chooser.getSelectedFile());
+        SaveCurrentTabFile();
     }//GEN-LAST:event_MenuItemFileSaveAsActionPerformed
 
     private void MenuItemViewToolbarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemViewToolbarActionPerformed
@@ -10749,7 +10765,7 @@ public class ESPlorer extends javax.swing.JFrame {
     public int nSpeed = 9600;
     public static final Logger LOGGER = Logger.getLogger(ESPlorer.class.getName());
     int save; // editor var
-    String FileName = "script"; // without ext
+    //String FileName = "script"; // without ext
     String DownloadedFileName = "";
     String NewFile = "New";
     int FileCount = 0;
@@ -10762,9 +10778,7 @@ public class ESPlorer extends javax.swing.JFrame {
     static final FileNameExtensionFilter FILTER_PYTHON = new FileNameExtensionFilter("Python files (*.py, *.pyc)", EXTENSION_PY);
     static final FileNameExtensionFilter FILTER_ALL = new FileNameExtensionFilter("All files (*.*)", EXTENSION_ALL);
     FileInputStream fis = null;
-    FileOutputStream fos = null;
     InputStreamReader isr = null;
-    OutputStreamWriter osw = null;
     BufferedReader br = null;
     BufferedWriter bw = null;
     public static int j = 0;
@@ -12619,9 +12633,8 @@ public class ESPlorer extends javax.swing.JFrame {
         } else { // we saving file, when open
             log("We saving new file " + DownloadedFileName);
         }
-        try {
-            log("Try to saving file " + DownloadedFileName + " ...");
-            fos = new FileOutputStream(f);
+        try (FileOutputStream fos = new FileOutputStream(f)) {
+            log("Try to save file " + DownloadedFileName + " ...");
             fos.write(PacketsByte);
             fos.flush();
             log("Save file " + DownloadedFileName + ": Success, size:" + Long.toString(f.length()));
@@ -12630,13 +12643,6 @@ public class ESPlorer extends javax.swing.JFrame {
             log("Save file " + DownloadedFileName + ": FAIL.");
             log(e.toString());
             JOptionPane.showMessageDialog(null, "Error, file " + DownloadedFileName + " not saved!");
-        }
-        try {
-            if (fos != null) {
-                fos.close();
-            }
-        } catch (IOException e) {
-            log(e.toString());
         }
         return success;
     }
