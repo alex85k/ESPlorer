@@ -11134,24 +11134,9 @@ public class ESPlorer extends javax.swing.JFrame {
         //Autoclean History --ADDED by Mike, DL2ZAP --
         //if (Autoclean.isSelected()) {   // ToDo: create Checkbox "Autoclean & uncomment this line
         if (true) { // ToDo: After creating Checkbox delete this line
-            int eintraege = Command.getItemCount();
-            //System.out.println("Start cleaning");
-            for (int lv1 = 0; lv1 < eintraege; lv1++) {
-                //System.out.print("Eintrag:" + lv1 +" : "+Command.getItemAt(lv1));
-                if (Command.getItemAt(lv1).equals(cmd)) {
-                    // System.out.println(" Doppelt, entfernt!");
-                    Command.removeItemAt(lv1);
-                    lv1--;  // re-read this Entry because List has moved up the Follower
-                } else {
-                    // System.out.println(" OK.");
-                }
-            }
+            Command.removeItem(cmd);
         }
-
         // System.out.println("Adding Command:" + cmd );
-        int eintraege = Command.getItemCount();
-
-        Command.setSelectedIndex(Command.getItemCount() - 1); // Place Index on last Entry
         Command.addItem(cmd); // Add to History after last Position
         Command.setSelectedIndex(Command.getItemCount() - 1); // Place Index on new last Entry
         // End of Autoclean-Procedure
