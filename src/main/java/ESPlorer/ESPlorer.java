@@ -12034,8 +12034,8 @@ public class ESPlorer extends javax.swing.JFrame {
                 } catch (SerialPortException ex) {
                     log(ex.toString());
                 }
-                data = data.replace(">> ", "");
-                data = data.replace(">>", "");
+                //data = data.replace(">> ", "");
+                //data = data.replace(">>", "");
                 data = data.replace("\r\n> ", "");
                 data = data.replace("\r\n\r\n", "\r\n");
 
